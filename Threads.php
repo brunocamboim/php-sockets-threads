@@ -13,7 +13,7 @@ class Threads extends Thread {
 
             switch($this->arg) {
 
-                case 'SOCKET':
+                case 'SOCKET_SERVER':
 
                     $socket = new Sockets();
                     

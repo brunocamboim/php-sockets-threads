@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Helper.php';
+
 class Sockets {
     
     private $port;
@@ -7,7 +9,7 @@ class Sockets {
 
     function __construct() {
 
-        $this->port = 9999;
+        $this->port = 6000;
         $this->address = getHostByName(getHostName());
 
     }
@@ -53,7 +55,28 @@ class Sockets {
             $r = socket_recvfrom($sock, $buf, 512, 0, $remote_ip, $remote_port);
             echo "$remote_ip : $remote_port -- " . $buf;
         
-            if( !socket_sendto($sock, "OK " . $buf , 100 , 0 , $remote_ip , $remote_port) )
+            $buffer = Helper::removeLineBreaks(explode(",", $buf));
+            $return = "";
+            switch ($buffer[0]) {
+                #pedir todos arquivos
+                case 'PTA':
+                    
+                    $return .= "ETA";
+                    foreach (new DirectoryIterator('./files') as $fileInfo) {
+                        if($fileInfo->isDot()) continue;
+
+                        $return .= "," . $fileInfo->getFilename();
+                    }
+                
+                    break;
+
+                #pedir arquivo especifico
+                case 'PAE':
+                    # code...
+                    break;
+            }
+            var_dump($return);
+            if( !socket_sendto($sock, $return, strlen($return) , 0 , $remote_ip , $remote_port) )
             {
                 $errorcode = socket_last_error();
                 $errormsg = socket_strerror($errorcode);

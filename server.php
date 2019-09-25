@@ -13,7 +13,7 @@ ob_implicit_flush();
  * Segundo parametro: Cria o contador pra testar a thread
  * Terceiro parametro: Carrega os ips conhecidos e busca os arquivos comparando com os meus
  */
-$tasks = array("SOCKET", "CONT", "IPS");
+$tasks = array("SOCKET_SERVER", "CONT", "IPS");
 
 # instancia as threads
 foreach ( $tasks as $i ) {

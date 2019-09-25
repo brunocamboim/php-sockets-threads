@@ -3,7 +3,7 @@
 error_reporting(~E_WARNING);
 
 $server = getHostByName(getHostName());
-$port = 9999;
+$port = 6000;
 
 if (!($sock = socket_create(AF_INET, SOCK_DGRAM, 0))) {
 	$errorcode = socket_last_error();
@@ -33,5 +33,5 @@ while(1) {
 		die("Could not receive data: [$errorcode] $errormsg \n");
 	}
 	
-	echo "Reply : $reply";
+	echo "Reply : $reply \n";
 }
