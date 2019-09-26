@@ -23,10 +23,10 @@ class Threads extends Thread {
 
                 case 'CONT':
 
-                    $sleep = mt_rand(1, 10);
-                    printf('%s: %s  -start -sleeps %d' . "\n", date("g:i:sa"), $this->arg, $sleep);
-                    sleep($sleep);
-                    printf('%s: %s  -finish' . "\n", date("g:i:sa"), $this->arg);
+//                    $sleep = mt_rand(1, 10);
+//                    printf('%s: %s  -start -sleeps %d' . "\n", date("g:i:sa"), $this->arg, $sleep);
+//                    sleep($sleep);
+//                    printf('%s: %s  -finish' . "\n", date("g:i:sa"), $this->arg);
                     
                     break;
 

@@ -54,11 +54,13 @@ class Sockets {
         
             $r = socket_recvfrom($sock, $buf, 512, 0, $remote_ip, $remote_port);
             echo "$remote_ip : $remote_port -- " . $buf;
-        
+
             $buffer = Helper::removeLineBreaks(explode(",", $buf));
-            $return = "";
-            switch ($buffer[0]) {
-                #pedir todos arquivos
+
+            $return = null;
+
+            switch (strtoupper($buffer[0])) {
+                #pedir todos arquivos - codigo e nome dos arquivos
                 case 'PTA':
                     
                     $return .= "ETA";
@@ -70,12 +72,27 @@ class Sockets {
                 
                     break;
 
-                #pedir arquivo especifico
+                #pedir arquivo especifico - Codigo, tamanho, nome e dados
                 case 'PAE':
-                    # code...
+
+                    $nome       = $buffer[1];
+                    $dir_file   = './files/'.$buffer[1];
+
+                    if (file_exists($dir_file)) {
+                        $return .= "EAE,";
+
+                        $file = file_get_contents($dir_file);
+                        $return .= strlen($file) . ",$nome,$file";
+                    }
+
                     break;
+
             }
-            var_dump($return);
+
+            if (empty($return)) {
+                $return = "COMANDO NAO RECONHECIDO";
+            }
+
             if( !socket_sendto($sock, $return, strlen($return) , 0 , $remote_ip , $remote_port) )
             {
                 $errorcode = socket_last_error();

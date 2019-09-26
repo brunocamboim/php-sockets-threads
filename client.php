@@ -26,7 +26,7 @@ while(1) {
 		die("Could not send data: [$errorcode] $errormsg \n");
 	}
 		
-	if (socket_recv($sock, $reply, 2045, MSG_PEEK) === FALSE){
+	if (socket_recv($sock, $reply, 2045, 0) === FALSE){
 		$errorcode = socket_last_error();
 		$errormsg = socket_strerror($errorcode);
 		
@@ -34,4 +34,6 @@ while(1) {
 	}
 	
 	echo "Reply : $reply \n";
+
+	unset($reply);
 }
