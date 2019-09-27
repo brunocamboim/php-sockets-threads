@@ -82,7 +82,7 @@ class Sockets {
                         $return .= "EAE,";
 
                         $file = file_get_contents($dir_file);
-                        $return .= strlen($file) . ",$nome,$file";
+                        $return .= filesize($dir_file) . ",$nome,$file";
                     }
 
                     break;
