@@ -7,10 +7,10 @@ class Sockets {
     private $port;
     private $address;
 
-    function __construct() {
+    function __construct($adress = null) {
 
         $this->port = 29000;
-        $this->address = getHostByName(getHostName());
+        $this->address = isset($adress) ? $adress : getHostByName(getHostName());
 
     }
 
@@ -53,7 +53,7 @@ class Sockets {
             clearstatcache();
         
             $r = socket_recvfrom($sock, $buf, 2045, 0, $remote_ip, $remote_port);
-            echo "$remote_ip : $remote_port -- $buf \n" ;
+            echo "SERVER: $remote_ip : $remote_port -- $buf \n" ;
 
             $buffer = Helper::removeLineBreaks(explode(";", $buf));
 
@@ -102,13 +102,117 @@ class Sockets {
                 $errorcode = socket_last_error();
                 $errormsg = socket_strerror($errorcode);
                 
-                echo "Erro ao mandar de volta\n";
+                echo "Erro ao mandar de volta para o cliente!\n";
             }
         
         } while (true);
         
         socket_close($sock);
 
+    }
+
+    public function createSocketClient() {
+
+        sleep(3);
+
+        $server = $this->address;
+        $port = $this->port;
+
+        if (!($sock = socket_create(AF_INET, SOCK_DGRAM, 0))) {
+            $errorcode = socket_last_error();
+            $errormsg = socket_strerror($errorcode);
+
+            die("Nao foi possivel criar o socket do cliente ($this->address) : [$errorcode] $errormsg \n");
+        }
+
+        echo "Socket cliente criado \n";
+
+        # array para requisitar a busca de arquivos especificos
+        $send_request_files = array();
+
+        while(1) {
+
+            sleep(3);
+
+            clearstatcache();
+
+            $input = "PTA";
+
+            if (!empty($send_request_files)) {
+
+                $input = "PAE;" . $send_request_files[0];
+                unset($send_request_files[0]);
+
+                $send_request_files = array_values($send_request_files);
+            }
+
+            if (!socket_sendto($sock, $input , strlen($input) , 0 , $server , $port)) {
+                $errorcode = socket_last_error();
+                $errormsg = socket_strerror($errorcode);
+
+                die("Erro ao enviar dados cliente ($this->address): [$errorcode] $errormsg \n");
+            }
+
+            if (socket_recv($sock, $reply, 2045, 0) === FALSE){
+                $errorcode = socket_last_error();
+                $errormsg = socket_strerror($errorcode);
+
+                die("Erro ao receber resposta do server ($this->address): [$errorcode] $errormsg \n");
+            }
+
+            $reply = explode(";", $reply);
+
+            switch (strtoupper($reply[0])) {
+                #pedir todos arquivos - codigo;nome_arquivo1,nome_arquivo2
+                case 'ETA':
+
+                    # pega os arquivos que eu tenho dele atualmente
+
+                    $client_files = [];
+                    foreach (new DirectoryIterator('./files') as $fileInfo) {
+                        if($fileInfo->isDot()) continue;
+                        if(strpos($fileInfo->getFilename(), $this->address) === false) continue;
+                        $client_files[] = $fileInfo->getFilename();
+                    }
+
+                    if (!empty($reply[1])) {
+                        $dados = explode(",", $reply[1]);
+                        $send_request_files = $dados;
+                    }
+
+                    break;
+
+                #pedir arquivo especifico - Codigo;tamanho;nome;dados
+                case 'EAE':
+
+                    $tamanho = $reply[1];
+                    $nome = $reply[2];
+                    $texto = $reply[3];
+
+                    if (sizeof($reply) > 4) {
+                        for ($i = 4; $i < sizeof($reply); $i++) {
+                            $texto .= ";" . $reply[$i];
+                        }
+                    }
+
+                    $dir_file   = './files/'.$nome;
+
+                    # verifica se eu tenho o arquivo e tem o tamanho diferente ou se ele nao existe eu crio em minha base
+                    if ((file_exists($dir_file) && filesize($dir_file) != $tamanho) || !file_exists($dir_file)) {
+                        $file = fopen($dir_file, "w");
+                        fwrite($file, $texto);
+                        fclose($file);
+                    }
+
+                    break;
+
+            }
+
+            echo "Cliente ($this->address): $reply[0] \n\n";
+
+            unset($reply);
+
+        }
     }
 
 }

@@ -16,27 +16,15 @@ class Threads extends Thread {
                 case 'SOCKET_SERVER':
 
                     $socket = new Sockets();
-                    
                     $socket->createSocket();
 
                     break;
 
-                case 'CONT':
+                default:
 
-//                    $sleep = mt_rand(1, 10);
-//                    printf('%s: %s  -start -sleeps %d' . "\n", date("g:i:sa"), $this->arg, $sleep);
-//                    sleep($sleep);
-//                    printf('%s: %s  -finish' . "\n", date("g:i:sa"), $this->arg);
-                    
-                    break;
-
-                case 'IPS':
-
-                    #pegar ips conhecidos
-                    $ips = [];
-                    if (file_exists("./ips.txt")) {
-                        $ips = file("./ips.txt", FILE_IGNORE_NEW_LINES);
-                    }
+                    #criar socket para cliente
+                    $socket = new Sockets($this->arg);
+                    $socket->createSocketClient();
 
                     break;
 

@@ -10,10 +10,17 @@ ob_implicit_flush();
 
 /**
  * Primeiro parametro: Cria o socket
- * Segundo parametro: Cria o contador pra testar a thread
- * Terceiro parametro: Carrega os ips conhecidos e busca os arquivos comparando com os meus
+ * Demais parametros: Ip dos servidores conhecidos
  */
-$tasks = array("SOCKET_SERVER", "CONT", "IPS");
+$tasks = array("SOCKET_SERVER");
+
+#pegar ips conhecidos
+if (file_exists("./ips.txt")) {
+    $ips = file("./ips.txt", FILE_IGNORE_NEW_LINES);
+    foreach ($ips as $value) {
+        $tasks[] = $value;
+    }
+}
 
 # instancia as threads
 foreach ( $tasks as $i ) {
