@@ -167,7 +167,6 @@ class Sockets {
                 case 'ETA':
 
                     # pega os arquivos que eu tenho dele atualmente
-
                     $client_files = [];
                     foreach (new DirectoryIterator('./files') as $fileInfo) {
                         if($fileInfo->isDot()) continue;
@@ -176,7 +175,27 @@ class Sockets {
                     }
 
                     if (!empty($reply[1])) {
+                        $delete_files = [];
+
                         $dados = explode(",", $reply[1]);
+                        $dados_compare = array_map(function($value) use ($server) {
+                            return $server . "_" . $value;
+                        }, $dados);
+
+                        #verificar os meus arquivos com os enviados pelo server
+                        foreach ($client_files as $nome) {
+                            if (!in_array($nome, $dados_compare)) {
+                                $delete_files[] = $nome;
+                            }
+                        }
+
+                        # deletar arquivos que estao em minha base mas nao do server
+                        if (!empty($delete_files)) {
+                            foreach ($delete_files as $nome) {
+                                unlink("./files/$nome");
+                            }
+                        }
+
                         $send_request_files = $dados;
                     }
 
@@ -186,9 +205,10 @@ class Sockets {
                 case 'EAE':
 
                     $tamanho = $reply[1];
-                    $nome = $reply[2];
+                    $nome = $server . "_" . $reply[2];
                     $texto = $reply[3];
 
+                    # caso o conteudo do arquivo contenha ";"
                     if (sizeof($reply) > 4) {
                         for ($i = 4; $i < sizeof($reply); $i++) {
                             $texto .= ";" . $reply[$i];
