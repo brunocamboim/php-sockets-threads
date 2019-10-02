@@ -39,8 +39,8 @@ class Sockets {
             die("Erro ao criar o socket: [$errorcode] $errormsg \n");
         }
         
-        echo "Socket criado \n";
-        
+        echo " Socket server criado! Meu server: $this->address - $this->port \n";
+
         if (!socket_bind($sock, $this->address, $this->port)) {
             $errorcode = socket_last_error();
             $errormsg = socket_strerror($errorcode);
@@ -51,8 +51,6 @@ class Sockets {
         do {
 
             clearstatcache();
-            
-            echo "Meu server: $this->address - $this->port \n";
 
             $r = socket_recvfrom($sock, $buf, 2045, 0, $remote_ip, $remote_port);
 
@@ -231,7 +229,7 @@ class Sockets {
 
             }
 
-            echo "Cliente efetuou recebeu resposta ($this->address): $reply[0] \n\n";
+            echo "Cliente recebeu resposta ($this->address): $reply[0] \n\n";
 
             unset($reply);
 
