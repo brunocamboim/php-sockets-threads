@@ -51,9 +51,12 @@ class Sockets {
         do {
 
             clearstatcache();
-        
+            
+            echo "Meu server: $this->address - $this->port \n";
+
             $r = socket_recvfrom($sock, $buf, 2045, 0, $remote_ip, $remote_port);
-            echo "SERVER: $remote_ip : $remote_port -- $buf \n" ;
+
+            echo "Server recebeu requisicao de: $remote_ip : $remote_port -- $buf \n" ;
 
             $buffer = Helper::removeLineBreaks(explode(";", $buf));
 
@@ -125,7 +128,7 @@ class Sockets {
             die("Nao foi possivel criar o socket do cliente ($this->address) : [$errorcode] $errormsg \n");
         }
 
-        echo "Socket cliente criado \n";
+        echo "Socket do cliente $this->address criado! \n";
 
         # array para requisitar a busca de arquivos especificos
         $send_request_files = array();
@@ -228,7 +231,7 @@ class Sockets {
 
             }
 
-            echo "Cliente ($this->address): $reply[0] \n\n";
+            echo "Cliente efetuou recebeu resposta ($this->address): $reply[0] \n\n";
 
             unset($reply);
 
