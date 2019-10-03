@@ -7,9 +7,18 @@ class Sockets {
     private $port;
     private $address;
 
-    function __construct($adress = null) {
+    function __construct($adress = null, $port = 29000) {
 
-        $this->port = 29000;
+        #pegar a porta
+        if (file_exists("./porta.txt")) {
+            $porta = file("./porta.txt", FILE_IGNORE_NEW_LINES);
+            foreach ($porta as $p) {
+                $porta = $p;
+                break;
+            }
+        }
+        
+        $this->port = $porta;
         $this->address = isset($adress) ? $adress : getHostByName(getHostName());
 
     }
