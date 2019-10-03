@@ -154,7 +154,7 @@ class Sockets {
                 die("Erro ao enviar dados cliente ($this->address): [$errorcode] $errormsg \n");
             }
 
-            if (socket_recv($sock, $reply, 2045, 0) === FALSE){
+            if (socket_recv($sock, $reply, 1000000, 0) === FALSE){
                 $errorcode = socket_last_error();
                 $errormsg = socket_strerror($errorcode);
 
