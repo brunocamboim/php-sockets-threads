@@ -126,6 +126,9 @@ class Sockets {
             die("Nao foi possivel criar o socket do cliente ($this->address) : [$errorcode] $errormsg \n");
         }
 
+        socket_set_nonblock( $sock );
+        //socket_set_option($sock,SOL_SOCKET,SO_RCVTIMEO,array("sec"=>1,"usec"=>0));
+
         echo "Socket do cliente $this->address criado! \n";
 
         # array para requisitar a busca de arquivos especificos
@@ -147,95 +150,97 @@ class Sockets {
                 $send_request_files = array_values($send_request_files);
             }
 
-            if (!socket_sendto($sock, $input , strlen($input) , 0 , $server , $port)) {
-                $errorcode = socket_last_error();
-                $errormsg = socket_strerror($errorcode);
+            $try = 5;
+            $ok = false;
+            while ($try && !$ok) {
 
-                die("Erro ao enviar dados cliente ($this->address): [$errorcode] $errormsg \n");
+                socket_sendto($sock, $input , strlen($input) , 0 , $server , $port);
+                sleep(1);
+                if (socket_recv($sock, $reply, 1000000, 0) !== FALSE) $ok = true;
+                $try--;
+
             }
 
-            if (socket_recv($sock, $reply, 1000000, 0) === FALSE){
-                $errorcode = socket_last_error();
-                $errormsg = socket_strerror($errorcode);
+            if ($ok) {
 
-                die("Erro ao receber resposta do server ($this->address): [$errorcode] $errormsg \n");
-            }
+                $reply = explode(";", $reply);
 
-            $reply = explode(";", $reply);
+                switch (strtoupper($reply[0])) {
+                    #pedir todos arquivos - codigo;nome_arquivo1,nome_arquivo2
+                    case 'ETA':
 
-            switch (strtoupper($reply[0])) {
-                #pedir todos arquivos - codigo;nome_arquivo1,nome_arquivo2
-                case 'ETA':
+                        # pega os arquivos que eu tenho dele atualmente
+                        $client_files = [];
+                        foreach (new DirectoryIterator('./files') as $fileInfo) {
+                            if($fileInfo->isDot()) continue;
+                            if(strpos($fileInfo->getFilename(), $this->address) === false) continue;
+                            $client_files[] = $fileInfo->getFilename();
+                        }
 
-                    # pega os arquivos que eu tenho dele atualmente
-                    $client_files = [];
-                    foreach (new DirectoryIterator('./files') as $fileInfo) {
-                        if($fileInfo->isDot()) continue;
-                        if(strpos($fileInfo->getFilename(), $this->address) === false) continue;
-                        $client_files[] = $fileInfo->getFilename();
-                    }
+                        if (!empty($reply[1])) {
+                            $delete_files = [];
 
-                    if (!empty($reply[1])) {
-                        $delete_files = [];
+                            $dados = explode(",", $reply[1]);
+                            $dados_compare = array_map(function($value) use ($server) {
+                                return $server . "_" . $value;
+                            }, $dados);
 
-                        $dados = explode(",", $reply[1]);
-                        $dados_compare = array_map(function($value) use ($server) {
-                            return $server . "_" . $value;
-                        }, $dados);
+                            #verificar os meus arquivos com os enviados pelo server
+                            foreach ($client_files as $nome) {
+                                if (!in_array($nome, $dados_compare)) {
+                                    $delete_files[] = $nome;
+                                }
+                            }
 
-                        #verificar os meus arquivos com os enviados pelo server
-                        foreach ($client_files as $nome) {
-                            if (!in_array($nome, $dados_compare)) {
-                                $delete_files[] = $nome;
+                            # deletar arquivos que estao em minha base mas nao do server
+                            if (!empty($delete_files)) {
+                                foreach ($delete_files as $nome) {
+                                    unlink("./files/$nome");
+                                }
+                            }
+
+                            $send_request_files = $dados;
+                        }
+
+                        break;
+
+                    #pedir arquivo especifico - Codigo;tamanho;nome;dados
+                    case 'EAE':
+
+                        $tamanho = $reply[1];
+                        $nome = $server . "_" . $reply[2];
+                        $texto = $reply[3];
+
+                        # caso o conteudo do arquivo contenha ";"
+                        if (sizeof($reply) > 4) {
+                            for ($i = 4; $i < sizeof($reply); $i++) {
+                                $texto .= ";" . $reply[$i];
                             }
                         }
 
-                        # deletar arquivos que estao em minha base mas nao do server
-                        if (!empty($delete_files)) {
-                            foreach ($delete_files as $nome) {
-                                unlink("./files/$nome");
-                            }
+                        $dir_file   = './files/'.$nome;
+
+                        # verifica se eu tenho o arquivo e tem o tamanho diferente ou se ele nao existe eu crio em minha base
+                        if ((file_exists($dir_file) && filesize($dir_file) != $tamanho) || !file_exists($dir_file)) {
+                            $file = fopen($dir_file, "w");
+                            fwrite($file, $texto);
+                            fclose($file);
                         }
 
-                        $send_request_files = $dados;
-                    }
+                        break;
 
-                    break;
+                }
 
-                #pedir arquivo especifico - Codigo;tamanho;nome;dados
-                case 'EAE':
+                echo "Cliente recebeu resposta ($this->address): $reply[0] \n\n";
 
-                    $tamanho = $reply[1];
-                    $nome = $server . "_" . $reply[2];
-                    $texto = $reply[3];
+                unset($reply);
 
-                    # caso o conteudo do arquivo contenha ";"
-                    if (sizeof($reply) > 4) {
-                        for ($i = 4; $i < sizeof($reply); $i++) {
-                            $texto .= ";" . $reply[$i];
-                        }
-                    }
+            } else {
 
-                    $dir_file   = './files/'.$nome;
-
-                    # verifica se eu tenho o arquivo e tem o tamanho diferente ou se ele nao existe eu crio em minha base
-                    if ((file_exists($dir_file) && filesize($dir_file) != $tamanho) || !file_exists($dir_file)) {
-                        $file = fopen($dir_file, "w");
-                        fwrite($file, $texto);
-                        fclose($file);
-                    }
-
-                    break;
+                echo "O servidor do cliente ($this->address) nao retornou!\n";
 
             }
-
-            echo "Cliente recebeu resposta ($this->address): $reply[0] \n\n";
-
-            unset($reply);
-
         }
     }
 
 }
-
-?>
